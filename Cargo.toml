@@ -1,0 +1,12 @@
+[package]
+name = "game_ecs"
+version = "0.1.0"
+authors = ["sndwave <sndwave0@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+specs = "0.15"
+rayon = "1.1"
+rand = "0.7"
