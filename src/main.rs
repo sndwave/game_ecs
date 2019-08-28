@@ -24,6 +24,20 @@ use specs::{prelude::*, WorldExt};
 use specs::ParJoin;
 
 #[derive(Debug)]
+struct PlayerControl;
+
+impl Component for PlayerControl {
+    type Storage = DenseVecStorage<Self>;
+}
+
+#[derive(Debug)]
+struct AIControl;
+
+impl Component for AIControl {
+    type Storage = DenseVecStorage<Self>;
+}
+
+#[derive(Debug)]
 struct Position(i32, i32);
 
 impl Component for Position {
@@ -214,6 +228,9 @@ impl<'a> System<'a> for AttackSystem {
 fn main() {
     let mut world = World::new();
 
+    world.register::<PlayerControl>();
+    world.register::<AIControl>();
+
     let mut dispatcher = DispatcherBuilder::new()
         .with(TargetingSystem, "targeting", &[])
         .with(MovementSystem, "movement", &["targeting"])
@@ -224,11 +241,26 @@ fn main() {
 
     let mut rng = rand::thread_rng();
     let position_range = Uniform::new(0, 20);
+    // create enemies
     for _ in 0..10 {
         let (x, y) = (position_range.sample(&mut rng),
                       position_range.sample(&mut rng));
         world
             .create_entity()
+            .with(AIControl)
+            .with(Position(x, y))
+            .with(Health(100))
+            .with(Target(None))
+            .with(Cooldown(0))
+            .build();
+    }
+    // create player characters
+    for _ in 0..2 {
+        let (x, y) = (position_range.sample(&mut rng),
+                      position_range.sample(&mut rng));
+        world
+            .create_entity()
+            .with(PlayerControl)
             .with(Position(x, y))
             .with(Health(100))
             .with(Target(None))
@@ -237,6 +269,16 @@ fn main() {
     }
 
     loop {
+
+        {
+            let cooldowns = world.read_storage::<Cooldown>();
+            let player_controlled = world.read_storage::<PlayerControl>();
+            for (entity, cooldown, _) in (&world.entities(), &cooldowns, &player_controlled).join() {
+                if cooldown.0 == 0 {
+                    println!("PLAYER {} TURN", entity.id())
+                }
+            }
+        }
 
         dispatcher.dispatch(&world);
 
